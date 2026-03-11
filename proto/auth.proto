@@ -1,5 +1,8 @@
 syntax = "proto3";
 
+// Generate Go stubs from repo root with:
+// protoc --proto_path=proto --go_out=. --go_opt=module=github.com/atls-academy/engineer-challenge --go-grpc_out=. --go-grpc_opt=module=github.com/atls-academy/engineer-challenge proto/auth.proto
+
 package auth.v1;
 option go_package = "github.com/atls-academy/engineer-challenge/internal/interfaces/grpc/pb";
 

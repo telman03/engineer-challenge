@@ -1,0 +1,9 @@
+web/node_modules
+web/dist
+.git
+.agents
+docs
+*.md
+.env
+.env.local
+deployments
