@@ -1,56 +1,42 @@
-# Conversation Log Summary
+# Dev Notes — Key Sessions
 
-Brief summaries of key AI interactions during development.
+Quick notes on the main development sessions and what came out of each.
 
-## Session 1: Domain Layer Design
+## Session 1 — Domain Layer
 
-**Goal**: Design and implement the domain layer with DDD patterns.
+Started by figuring out the bounded contexts. Auth felt like it needed to be split into two concerns: user identity (registration, passwords) and session management (login, tokens). Ended up with an Identity context and an Auth context, each with their own aggregate.
 
-**Key Decisions**:
-- Two bounded contexts: Identity (user lifecycle) and Auth (session management)
-- Value objects for Email, Password, UserID, ResetToken, SessionID, TokenPair
-- User aggregate enforces registration invariants, password reset token lifecycle
-- Session aggregate manages auth sessions with max 5 concurrent sessions per user
-- Domain events: UserRegistered, PasswordResetRequested/Completed, UserAuthenticated, SessionRevoked
+Spent some time getting the value objects right — Email does normalization and RFC validation, Password enforces complexity rules, ResetToken handles the 15-min expiry logic. The AI helped implement these once I had the rules defined, but I had to be specific about what "valid" meant for each one.
 
-**Outcome**: Complete domain layer committed and merged via PR #1.
+Merged this as PR #1.
 
-## Session 2: Infrastructure & Application Layers
+## Session 2 — Infrastructure & Application
 
-**Goal**: Implement infrastructure adapters and CQRS handlers.
+This was the big session. Wired up:
+- bcrypt hasher (cost=12 — good enough balance for auth)
+- JWT issuer with separate access/refresh tokens
+- PostgreSQL repos for users and sessions
+- Redis-based rate limiter (sliding window)
+- In-memory event bus (quick and dirty, noted as a production TODO)
 
-**Key Decisions**:
-- bcrypt (cost=12) for password hashing — balance of security and performance
-- JWT HMAC-SHA256 with access (15min) / refresh (7d) token separation
-- PostgreSQL for user/session persistence with proper indexing
-- Redis sliding window rate limiter for brute force protection
-- In-memory synchronous event bus (production would use message broker)
-- Anti-enumeration pattern in password reset (always returns success)
+The anti-enumeration pattern on password reset was an interesting one — always return success even if the email doesn't exist. Simple but effective.
 
-**Outcome**: Full application stack with GraphQL interface, server entry point, and database migrations.
+CQRS handlers came together pretty quickly since the domain layer was solid.
 
-## Session 3: Documentation & IaC
+## Session 3 — Deployment & Docs
 
-**Goal**: Create comprehensive documentation and infrastructure as code.
+Set up the full deployment story:
+- Multi-stage Docker build (keeps the image small, runs as non-root)
+- Docker Compose with Postgres, Redis, Prometheus, and Grafana
+- Terraform for AWS (VPC, RDS, ElastiCache, ECS Fargate) — not deployed, but the manifests are there
+- Basic K8s deployment with health checks
 
-**Key Decisions**:
-- Multi-stage Docker build with non-root user for security
-- Docker Compose with full observability stack (Prometheus + Grafana)
-- Terraform for AWS (VPC, RDS, ElastiCache, ECS Fargate)
-- Kubernetes manifests as alternative deployment target
-- 7 ADRs documenting each major technical decision
+Also wrote the ADRs. Seven of them covering the major decisions (DDD structure, CQRS approach, GraphQL choice, etc.).
 
-**Outcome**: Production-ready IaC and extensive documentation.
+## Session 4 — Tests & Frontend
 
-## Session 4: Testing & Frontend
+Wrote unit tests for all domain value objects and aggregate invariants. Also added infrastructure tests for bcrypt round-trips, JWT lifecycle, and event bus routing.
 
-**Goal**: Write tests and build React authentication forms.
+Frontend is a simple React + TypeScript + Vite setup. Login, register, forgot password, reset password flows. Has a password strength indicator that checks against the same rules as the backend value object. GraphQL client auto-injects the Bearer token.
 
-**Key Decisions**:
-- Domain tests cover all value object validations and aggregate invariants
-- Infrastructure tests verify bcrypt round-trip, JWT token lifecycle, event bus routing
-- React frontend with TypeScript, Vite, and client-side password validation
-- Password strength indicator with real-time feedback
-- GraphQL client with automatic Bearer token injection
-
-**Outcome**: Comprehensive test suite and functional frontend.
+Nothing fancy, but it works end to end.

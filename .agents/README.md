@@ -1,83 +1,37 @@
-# AI-Assisted Development Process
+# AI Usage in This Project
 
-This folder documents how AI tools were used during the development of the authentication module.
+I used **GitHub Copilot (Claude)** in VS Code throughout development — mostly as a pair programming buddy to bounce ideas off of and speed up the boring parts.
 
-## Tool Used
+## How I Used It
 
-**GitHub Copilot (Claude)** — VS Code extension with chat and inline code generation.
+Honestly, the AI was most useful for the stuff I already knew how to do but didn't want to type out manually. Things like wiring up PostgreSQL repositories, writing repetitive test cases, and generating Terraform boilerplate. For the actual architecture — deciding where to split bounded contexts, choosing bcrypt over argon2id, figuring out the CQRS boundaries — that was all me thinking through trade-offs.
 
-## Philosophy
+### The Workflow
 
-AI was used as a **pair programming partner**, not a code generator. Every architectural decision, design pattern, and trade-off was deliberately chosen and validated. The AI accelerated implementation of well-understood patterns but did not make design decisions autonomously.
+I'd typically start by sketching out what I wanted (mentally or in comments), then ask the AI to help implement it. If something looked wrong or over-engineered, I'd adjust. A few times I threw away what it gave me and started over with a simpler approach.
 
-## Process Overview
+**Rough timeline:**
 
-### Phase 1: Architecture & Domain Design
+1. **Domain modeling** — I worked through the Identity vs Auth context split, defined aggregates and value objects. AI helped flesh out the implementations once I had the structure clear.
 
-1. **Domain Modeling** — Defined bounded contexts (Identity + Auth), aggregates, value objects, and domain events through iterative discussion
-2. **Pattern Selection** — Evaluated DDD + CQRS fit for the auth domain, discussed trade-offs of event sourcing vs. state-based persistence
-3. **API Design** — Chose GraphQL as primary client API with gRPC proto definition for service-to-service communication
+2. **Infrastructure + app layer** — This is where AI saved the most time. Repository implementations, CQRS handlers, JWT/bcrypt wrappers — all fairly standard patterns that just need to be written correctly.
 
-### Phase 2: Implementation
+3. **IaC & deployment** — Dockerfile, Docker Compose, Terraform, K8s manifests. AI generated the initial versions, I reviewed and tweaked configs.
 
-1. **Domain Layer** — AI helped implement value objects with validation rules, aggregate invariants, and domain events
-2. **Infrastructure Layer** — Generated bcrypt hasher, JWT issuer, PostgreSQL repositories, Redis rate limiter implementations
-3. **Application Layer** — CQRS command/query handlers with proper error handling and anti-enumeration patterns
-4. **Interface Layer** — GraphQL schema definition and resolver wiring
+4. **Tests & frontend** — AI helped generate test cases for value object validation and aggregate invariants. Frontend was straightforward React forms.
 
-### Phase 3: Infrastructure as Code
+5. **Documentation** — ADRs, API docs, architecture diagrams. AI drafted, I edited for accuracy.
 
-1. **Docker** — Multi-stage Dockerfile with security hardening (non-root user, minimal base image)
-2. **Docker Compose** — Full local development stack (app, Postgres, Redis, Prometheus, Grafana)
-3. **Terraform** — AWS deployment manifests (VPC, RDS, ElastiCache, ECS Fargate, ALB)
-4. **Kubernetes** — Deployment manifests with health checks and resource limits
+## Where AI Helped vs Where It Didn't
 
-### Phase 4: Testing & Frontend
+**Helped a lot:**
+- Generating boilerplate code that follows established patterns
+- Keeping code style consistent across dozens of files
+- Catching silly mistakes (unused imports, missing error returns)
+- Drafting documentation from existing code
 
-1. **Domain Tests** — Unit tests for all value objects and aggregate invariants
-2. **Infrastructure Tests** — Tests for bcrypt hashing, JWT issuance/validation, event bus
-3. **React Frontend** — Auth forms (login, register, forgot password, reset password) with client-side validation
-
-### Phase 5: Documentation
-
-1. **Architecture Documentation** — Comprehensive docs/README.md with diagrams and explanations
-2. **API Reference** — GraphQL API documentation with examples
-3. **ADRs** — 7 Architecture Decision Records documenting key choices
-4. **This Document** — AI usage transparency
-
-## What AI Did Well
-
-- **Boilerplate acceleration** — Generating repetitive test cases, repository implementations, and infrastructure configs
-- **Pattern consistency** — Maintaining consistent code style and architectural patterns across files
-- **Documentation generation** — Creating comprehensive documentation from code context
-- **Error identification** — Catching issues like unused imports, missing error handling, and interface mismatches
-
-## What Required Human Judgment
-
-- **Bounded context boundaries** — Where to split Identity vs Auth domains
-- **Security decisions** — bcrypt cost factor, JWT algorithm choice, rate limiting strategy
-- **Trade-off analysis** — When to use eventual vs. strong consistency, complexity vs. simplicity
-- **Production readiness gaps** — Identifying what would need to change for production deployment
-- **Architecture patterns** — CQRS granularity, event bus synchronous vs. async decision
-
-## Prompt Patterns Used
-
-1. **Architectural prompts** — "Design the domain model for authentication with DDD bounded contexts"
-2. **Implementation prompts** — "Implement the user aggregate with registration and password reset invariants"
-3. **Review prompts** — "Review this code for security vulnerabilities and missing edge cases"
-4. **Documentation prompts** — "Generate API documentation for the GraphQL schema"
-
-## Files Generated with AI Assistance
-
-All source code files were generated with AI assistance and reviewed for correctness. Key files:
-
-| Category | Files | AI Contribution |
-|----------|-------|----------------|
-| Domain Layer | `internal/domain/*/` | Value objects, aggregates, events, interfaces |
-| Infrastructure | `internal/infrastructure/*/` | Crypto, persistence, observability |
-| Application | `internal/application/*/` | CQRS handlers |
-| Interface | `internal/interfaces/graphql/` | Schema, resolver, handler |
-| IaC | `Dockerfile`, `docker-compose.yml`, `deployments/` | Docker, Terraform, K8s |
-| Tests | `*_test.go` files | Unit tests for domain and infrastructure |
-| Frontend | `web/src/` | React components and API client |
-| Documentation | `docs/` | README, API docs, ADRs |
+**Didn't help much with:**
+- Deciding *how* to structure the domain (bounded context boundaries, aggregate design)
+- Security trade-offs (hashing algorithm, token strategy, rate limiting approach)
+- Knowing when to stop — AI tends to over-engineer if you let it
+- Understanding what's "good enough" for this scope vs what's production overkill
